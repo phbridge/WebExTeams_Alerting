@@ -1,0 +1,13 @@
+[Unit]
+Description=WebExTeams-Grafana-Alerting
+After=network.target
+[Install]
+WantedBy=multi-user.target
+[Service]
+User=phbridge
+PermissionsStartOnly=true
+ExecStart=/usr/bin/python3.7 /home/phbridge/WebExTeams-Grafana-Alerting/WebExTeams-Grafana-Alerting.py
+TimeoutSec=600
+Restart=on-failure
+RestartSec=35
+RuntimeDirectoryMode=755
