@@ -2,7 +2,9 @@ MERAKI_API_KEY = "1234567890abcdef1234567890abcdef1234567"
 FLASK_HOST = "::"
 FLASK_PORT = 8050
 FLASK_HOSTNAME = "example.com"
-ABSOLUTE_PATH = "/Users/phbridge/Documents/Git/MerakiMonitor"
-LOGFILE = ABSOLUTE_PATH + "/logs/MerakiMonitor_%s_%s.log" % (FLASK_HOST, FLASK_PORT)
-MERAKI_ORG_ID = "1234567"
+ABSOLUTE_PATH = "/Users/phbridge/Documents/Git/WebExTeams-Grafana-Alerting"
+LOGFILE = ABSOLUTE_PATH + "/logs/WebExTeams-Grafana-Alerting_%s_%s.log" % (FLASK_HOST, FLASK_PORT)
+
+WXT_BOT_ACCESS_TOKEN = "AHBxNWRiYmItZGI3OC00ZjFmLWJlYjUtNTMxNDQ5MGI1YzUyZTJmYWFjZjgtMGZk_PF92_1eb65fdf-9643-417f-9583-ad72cae0e10f"
+WXT_BOT_ROOM_ID = "B2lzY29zcGFyazovL3VzL1DYW69vNDQ0N2JkNjAtMdkwNC0xMWViLWI1MDEtMzNiZDMwNDMxYWI0"
 WXT_BOT_NAME = "botname.example"
