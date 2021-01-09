@@ -63,13 +63,12 @@ def wxt_bot_message():
     function_logger.info("wxt_bot_message")
     try:
         if request.method == 'GET':
-            function_logger.info("GET request recieved on WxT Bot responding")
-            function_logger.critical("GOT GET MESSAGE")
-            function_logger.critical(request.json)
+            function_logger.info("GOT GET MESSAGE")
+            function_logger.debug(request.json)
             return Response("WORKING", mimetype='text/plain')
         elif request.method == 'POST':
-            function_logger.critical("GOT POST MESSAGE")
-            function_logger.critical(request.json)
+            function_logger.info("GOT POST MESSAGE")
+            function_logger.debug(request.json)
             if request.json["state"] == "ok":
                 prepend = "✅😀🐵"
                 postpend = "🐵😀✅"
