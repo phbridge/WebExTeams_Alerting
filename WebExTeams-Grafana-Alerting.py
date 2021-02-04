@@ -107,7 +107,7 @@ def graceful_killer(signal_number, frame):
 if __name__ == "__main__":
     # Create Logger
     logger = logging.getLogger(".__main__")
-    handler = logging.handlers.TimedRotatingFileHandler(LOGFILE, backupCount=365, when='D')
+    handler = logging.handlers.TimedRotatingFileHandler(LOGFILE, backupCount=30, when='D')
     logger_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(process)d:%(name)s - %(message)s')
     handler.setFormatter(logger_formatter)
     logger.addHandler(handler)
