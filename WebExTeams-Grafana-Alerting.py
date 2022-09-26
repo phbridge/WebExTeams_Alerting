@@ -84,17 +84,19 @@ def wxt_bot_message():
         elif request.method == 'POST':
             function_logger.info("GOT POST MESSAGE")
             function_logger.debug(request.json)
-            if request.json["state"] == "ok":
-                prepend = "✅😀🐵"
-                postpend = "🐵😀✅"
-            elif request.json["state"] == "alerting":
-                prepend = "⚠️🤬🙉"
-                postpend = "🙉🤬⚠️"
-            else:
-                prepend = "‼️😨🙈"
-                postpend = "🙈😨‼️"
-            message_response = "%s %s to see more infomation please [click here](%s) %s" % (prepend, request.json["title"], request.json["ruleUrl"], postpend)
-            api.messages.create(WXT_BOT_ROOM_ID, text=request.json["title"], markdown=message_response)
+            for each in request.json['alerts']:
+                if request.json["state"] == "resolved":
+                    prepend = "✅😀🐵"
+                    postpend = "🐵😀✅"
+                elif request.json["state"] == "firing":
+                    prepend = "⚠️🤬🙉"
+                    postpend = "🙉🤬⚠️"
+                else:
+                    prepend = "‼️😨🙈"
+                    postpend = "🙈😨‼️"
+                message_response = "%s %s to see more infomation please [click here](%s) %s" % (prepend, each["labels"]["alertname"], each["panelURL"], postpend)
+                api.messages.create(WXT_BOT_ROOM_ID, text=each["labels"]["alertname"], markdown=message_response)
+            # api.messages.create(WXT_BOT_ROOM_ID, markdown=request.json["message"])
             return Response("WORKING", mimetype='text/plain', status=200)
     except KeyError as e:
         function_logger.warning("could not build WxT string due to missing %s" % str(e))
