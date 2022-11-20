@@ -76,7 +76,7 @@ flask_app = Flask(__name__)
 def wxt_bot_message():
     function_logger = logger.getChild("%s.%s.%s" % (inspect.stack()[2][3], inspect.stack()[1][3], inspect.stack()[0][3]))
     function_logger.info("wxt_bot_message")
-    logger.setLevel(logging.DEBUG)
+    function_logger.setLevel(logging.DEBUG)
     try:
         if request.method == 'GET':
             function_logger.info("GOT GET MESSAGE")
