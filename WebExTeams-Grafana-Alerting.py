@@ -76,6 +76,7 @@ flask_app = Flask(__name__)
 def wxt_bot_message():
     function_logger = logger.getChild("%s.%s.%s" % (inspect.stack()[2][3], inspect.stack()[1][3], inspect.stack()[0][3]))
     function_logger.info("wxt_bot_message")
+    logger.setLevel(logging.DEBUG)
     try:
         if request.method == 'GET':
             function_logger.info("GOT GET MESSAGE")
@@ -85,16 +86,16 @@ def wxt_bot_message():
             function_logger.info("GOT POST MESSAGE")
             function_logger.debug(request.json)
             for each in request.json['alerts']:
-                if request.json["state"] == "resolved":
+                if request.json["status"] == "resolved":
                     prepend = "✅😀🐵"
                     postpend = "🐵😀✅"
-                elif request.json["state"] == "firing":
+                elif request.json["status"] == "firing":
                     prepend = "⚠️🤬🙉"
                     postpend = "🙉🤬⚠️"
                 else:
                     prepend = "‼️😨🙈"
                     postpend = "🙈😨‼️"
-                message_response = "%s %s to see more infomation please [click here](%s) %s" % (prepend, each["labels"]["alertname"], each["panelURL"], postpend)
+                message_response = "%s %s - %s to see more infomation please [click here](%s) %s" % (prepend, each["labels"]["rulename"], each["labels"]["alertname"], each["panelURL"], postpend)
                 api.messages.create(WXT_BOT_ROOM_ID, text=each["labels"]["alertname"], markdown=message_response)
             # api.messages.create(WXT_BOT_ROOM_ID, markdown=request.json["message"])
             return Response("WORKING", mimetype='text/plain', status=200)
