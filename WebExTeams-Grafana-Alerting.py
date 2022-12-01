@@ -95,7 +95,13 @@ def wxt_bot_message():
                 else:
                     prepend = "‼️😨🙈"
                     postpend = "🙈😨‼️"
-                message_response = "%s %s - %s to see more infomation please [click here](%s) %s" % (prepend, each["labels"]["rulename"], each["labels"]["alertname"], each["panelURL"], postpend)
+                alertname = ""
+                if each["labels"].get("alertname"):
+                    alertname = each["labels"]["alertname"]
+                rulename = ""
+                if each["labels"].get("rulename"):
+                    rulename = each["labels"]["rulename"]
+                message_response = "%s %s - %s to see more infomation please [click here](%s) %s" % (prepend, rulename, alertname, each["panelURL"], postpend)
                 api.messages.create(WXT_BOT_ROOM_ID, text=each["labels"]["alertname"], markdown=message_response)
             # api.messages.create(WXT_BOT_ROOM_ID, markdown=request.json["message"])
             return Response("WORKING", mimetype='text/plain', status=200)
