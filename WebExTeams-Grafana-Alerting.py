@@ -95,10 +95,10 @@ def wxt_bot_message():
                 else:
                     prepend = "‼️😨🙈"
                     postpend = "🙈😨‼️"
-                alertname = ""
+                alertname = "No Alert Name"
                 if each["labels"].get("alertname"):
                     alertname = each["labels"]["alertname"]
-                rulename = ""
+                rulename = "No Rule Name"
                 if each["labels"].get("rulename"):
                     rulename = each["labels"]["rulename"]
                 message_response = "%s %s - %s to see more infomation please [click here](%s) %s" % (prepend, rulename, alertname, each["panelURL"], postpend)
