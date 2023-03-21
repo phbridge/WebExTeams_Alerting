@@ -77,6 +77,7 @@ def wxt_bot_message():
     function_logger = logger.getChild("%s.%s.%s" % (inspect.stack()[2][3], inspect.stack()[1][3], inspect.stack()[0][3]))
     function_logger.info("wxt_bot_message")
     function_logger.setLevel(logging.DEBUG)
+    message_response = ""
     try:
         if request.method == 'GET':
             function_logger.info("GOT GET MESSAGE")
@@ -86,10 +87,10 @@ def wxt_bot_message():
             function_logger.info("GOT POST MESSAGE")
             function_logger.debug(request.json)
             for each in request.json['alerts']:
-                if request.json["status"] == "resolved":
+                if each["status"] == "resolved":
                     prepend = "✅😀🐵"
                     postpend = "🐵😀✅"
-                elif request.json["status"] == "firing":
+                elif each["status"] == "firing":
                     prepend = "⚠️🤬🙉"
                     postpend = "🙉🤬⚠️"
                 else:
@@ -101,8 +102,8 @@ def wxt_bot_message():
                 rulename = "No Rule Name"
                 if each["labels"].get("rulename"):
                     rulename = each["labels"]["rulename"]
-                message_response = "%s %s - %s to see more infomation please [click here](%s) %s" % (prepend, rulename, alertname, each["panelURL"], postpend)
-                api.messages.create(WXT_BOT_ROOM_ID, text=each["labels"]["alertname"], markdown=message_response)
+                message_response += "%s %s - %s to see more infomation please [click here](%s) %s \n" % (prepend, rulename, alertname, each["panelURL"], postpend)
+            api.messages.create(WXT_BOT_ROOM_ID, text=message_response, markdown=message_response)
             # api.messages.create(WXT_BOT_ROOM_ID, markdown=request.json["message"])
             return Response("WORKING", mimetype='text/plain', status=200)
     except KeyError as e:
