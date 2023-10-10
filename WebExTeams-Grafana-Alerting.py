@@ -103,7 +103,14 @@ def wxt_bot_message():
                 if each["labels"].get("rulename"):
                     rulename = each["labels"]["rulename"]
                 message_response += "%s %s - %s to see more infomation please [click here](%s) %s \n" % (prepend, rulename, alertname, each["panelURL"], postpend)
-            api.messages.create(WXT_BOT_ROOM_ID, text=message_response, markdown=message_response)
+
+                if len(message_response) > (7439 * .80):
+                    function_logger.info("response length reached %s sending partial message" % str(len(message_response)))
+                    api.messages.create(WXT_BOT_ROOM_ID, text=message_response, markdown=message_response)
+                    message_response = ""
+
+            if len(message_response) > 2:
+                api.messages.create(WXT_BOT_ROOM_ID, text=message_response, markdown=message_response)
             # api.messages.create(WXT_BOT_ROOM_ID, markdown=request.json["message"])
             return Response("WORKING", mimetype='text/plain', status=200)
     except KeyError as e:
