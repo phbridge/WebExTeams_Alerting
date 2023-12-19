@@ -145,7 +145,7 @@ if __name__ == "__main__":
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
     logger.info("---------------------- STARTING ----------------------")
-    logger.info("cisco EoS EoL script started")
+    logger.info("WebExTeams_Alerting started")
 
     # Catch SIGTERM etc
     signal.signal(signal.SIGHUP, graceful_killer)
