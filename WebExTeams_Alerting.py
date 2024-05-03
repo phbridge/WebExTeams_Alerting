@@ -41,17 +41,19 @@
 #
 
 
-import inspect  # part of the logging stack
-import logging.handlers  # Needed for logging
-import sys  # for error to catch and debug
-import threading  # for periodic cron type jobs
-import traceback  # helps add more logging infomation
-import wsgiserver  # Runs the Flask webesite
-from flask import Flask  # Flask website
-from flask import Response  # Used to respond to stats request
-import signal  # catches SIGTERM and SIGINT
-from flask import request  # Flask website requester details
-from webexteamssdk import WebexTeamsAPI  # gets and posts messages
+import inspect                  # part of the logging stack
+import logging.handlers         # Needed for logging
+import sys                      # for error to catch and debug
+# import threading                # for periodic cron type jobs
+import traceback                # helps add more logging infomation
+import wsgiserver               # Runs the Flask webesite
+from flask import Flask         # Flask website
+from flask import Response      # Used to respond to stats request
+import signal                   # catches SIGTERM and SIGINT
+from flask import request       # Flask website requester details
+# from webexteamssdk import WebexTeamsAPI  # gets and posts messages
+import requests
+import time
 
 import credentials  # imports static values
 
@@ -61,12 +63,12 @@ FLASK_HOSTNAME = credentials.FLASK_HOSTNAME
 TARGET_URL = "http://" + FLASK_HOSTNAME + ":" + str(FLASK_PORT) + "/wxt_webhook"
 ABSOLUTE_PATH = credentials.ABSOLUTE_PATH
 LOGFILE = credentials.LOGFILE
-
-THREAD_TO_BREAK = threading.Event()
+#
+# THREAD_TO_BREAK = threading.Event()
 
 WXT_BOT_ACCESS_TOKEN = credentials.WXT_BOT_ACCESS_TOKEN
 WXT_BOT_ROOM_ID = credentials.WXT_BOT_ROOM_ID
-api = WebexTeamsAPI(access_token=WXT_BOT_ACCESS_TOKEN)
+# api = WebexTeamsAPI(access_token=WXT_BOT_ACCESS_TOKEN)
 WXT_BOT_NAME = credentials.WXT_BOT_NAME
 
 flask_app = Flask(__name__)
@@ -106,12 +108,13 @@ def wxt_bot_message():
 
                 if len(message_response) > (7439 * .80):
                     function_logger.info("response length reached %s sending partial message" % str(len(message_response)))
-                    api.messages.create(WXT_BOT_ROOM_ID, text=message_response, markdown=message_response)
+                    message_create(roomId=WXT_BOT_ROOM_ID, text=message_response, markdown=message_response)
+                    # api.messages.create(WXT_BOT_ROOM_ID, text=message_response, markdown=message_response)
                     message_response = ""
 
             if len(message_response) > 2:
-                api.messages.create(WXT_BOT_ROOM_ID, text=message_response, markdown=message_response)
-            # api.messages.create(WXT_BOT_ROOM_ID, markdown=request.json["message"])
+                # api.messages.create(WXT_BOT_ROOM_ID, text=message_response, markdown=message_response)
+                message_create(roomId=WXT_BOT_ROOM_ID, text=message_response, markdown=message_response)
             return Response("WORKING", mimetype='text/plain', status=200)
     except KeyError as e:
         function_logger.warning("could not build WxT string due to missing %s" % str(e))
@@ -125,6 +128,136 @@ def wxt_bot_message():
         function_logger.error("Unexpected error:%s" % str(e))
         function_logger.error("TRACEBACK=%s" % str(traceback.format_exc()))
     return Response("ERROR", mimetype='text/plain', status=500)
+
+
+def message_create(roomId, text, markdown=None):
+    function_logger = logger.getChild("%s.%s.%s" % (inspect.stack()[2][3], inspect.stack()[1][3], inspect.stack()[0][3]))
+    webex_message_url = "https://webexapis.com/v1/messages"
+    webex_headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer %s" % WXT_BOT_ACCESS_TOKEN
+    }
+    body_data = {
+        "roomId": roomId,
+        "text": text,
+        "markdown": markdown
+    }
+    success = False
+    attempts = 0
+    while attempts < 5 and not success:
+        try:
+            response = requests.post(url=webex_message_url, header=webex_headers, data=body_data)
+            if response.status_code == 200:
+                success = True
+            else:
+                function_logger.critical("got %s code from post" % response.status_code)
+                function_logger.critical("got text as %s" % response.text)
+                function_logger.critical("got headers as %s" % response.headers)
+                time.sleep(1)
+        except requests.exceptions.ConnectTimeout as e:
+            attempts += 1
+            function_logger.warning("attempted " + str(attempts) + " Failed Connection Timeout")
+            function_logger.warning("Unexpected error:" + str(sys.exc_info()[0]))
+            function_logger.warning("Unexpected error:" + str(e))
+            function_logger.warning("TRACEBACK=" + str(traceback.format_exc()))
+            time.sleep(1)
+        except requests.exceptions.ConnectionError as e:
+            attempts += 1
+            function_logger.warning("attempted " + str(attempts) + " Failed Connection Timeout")
+            function_logger.warning("Unexpected error:" + str(sys.exc_info()[0]))
+            function_logger.warning("Unexpected error:" + str(e))
+            function_logger.warning("TRACEBACK=" + str(traceback.format_exc()))
+            time.sleep(1)
+        except Exception as e:
+            function_logger.error("attempted " + str(attempts) + " Failed")
+            function_logger.error("Unexpected error:" + str(sys.exc_info()[0]))
+            function_logger.error("Unexpected error:" + str(e))
+            function_logger.debug("TRACEBACK=" + str(traceback.format_exc()))
+            time.sleep(1)
+            break
+    return
+
+
+def update_influx(raw_string, timestamp=None):
+    function_logger = logger.getChild("%s.%s.%s" % (inspect.stack()[2][3], inspect.stack()[1][3], inspect.stack()[0][3]))
+    # function_logger.setLevel(logging.INFO)
+    try:
+        string_to_upload = ""
+        if timestamp is not None:
+            timestamp_string = str(int(timestamp.timestamp()) * 1000000000)
+            for each in raw_string.splitlines():
+                string_to_upload += each + " " + timestamp_string + "\n"
+        else:
+            string_to_upload = raw_string
+        function_logger.debug(string_to_upload)
+        success_array = []
+        upload_to_influx_sessions = requests.session()
+        for influx_path_url in INFLUX_DB_PATH:
+            success = False
+            attempts = 0
+            attempt_error_array = []
+            while attempts < 5 and not success:
+                try:
+                    upload_to_influx_sessions_response = upload_to_influx_sessions.post(url=influx_path_url, data=string_to_upload, timeout=(20, 10))
+                    if upload_to_influx_sessions_response.status_code == 204:
+                        function_logger.debug("content=%s" % upload_to_influx_sessions_response.content)
+                        function_logger.debug("status_code=%s" % upload_to_influx_sessions_response.status_code)
+                        success = True
+                    else:
+                        attempts += 1
+                        function_logger.warning("status_code=%s" % upload_to_influx_sessions_response.status_code)
+                        function_logger.warning("content=%s" % upload_to_influx_sessions_response.content)
+                except requests.exceptions.ConnectTimeout as e:
+                    attempts += 1
+                    function_logger.debug("update_influx - attempted " + str(attempts) + " Failed Connection Timeout")
+                    function_logger.debug("update_influx - Unexpected error:" + str(sys.exc_info()[0]))
+                    function_logger.debug("update_influx - Unexpected error:" + str(e))
+                    function_logger.debug("update_influx - String was:" + str(string_to_upload).splitlines()[0])
+                    function_logger.debug("update_influx - TRACEBACK=" + str(traceback.format_exc()))
+                    attempt_error_array.append(str(sys.exc_info()[0]))
+                except requests.exceptions.ConnectionError as e:
+                    attempts += 1
+                    function_logger.debug("update_influx - attempted " + str(attempts) + " Failed Connection Error")
+                    function_logger.debug("update_influx - Unexpected error:" + str(sys.exc_info()[0]))
+                    function_logger.debug("update_influx - Unexpected error:" + str(e))
+                    function_logger.debug("update_influx - String was:" + str(string_to_upload).splitlines()[0])
+                    function_logger.debug("update_influx - TRACEBACK=" + str(traceback.format_exc()))
+                    attempt_error_array.append(str(sys.exc_info()[0]))
+                except Exception as e:
+                    function_logger.error("update_influx - attempted " + str(attempts) + " Failed")
+                    function_logger.error("update_influx - Unexpected error:" + str(sys.exc_info()[0]))
+                    function_logger.error("update_influx - Unexpected error:" + str(e))
+                    function_logger.error("update_influx - String was:" + str(string_to_upload).splitlines()[0])
+                    function_logger.debug("update_influx - TRACEBACK=" + str(traceback.format_exc()))
+                    attempt_error_array.append(str(sys.exc_info()[0]))
+                    break
+            success_array.append(success)
+        upload_to_influx_sessions.close()
+        super_success = False
+        for each in success_array:
+            if not each:
+                super_success = False
+                break
+            else:
+                super_success = True
+        if not super_success:
+            function_logger.error("update_influx - FAILED after 5 attempts. Failed up update " + str(string_to_upload.splitlines()[0]))
+            function_logger.error("update_influx - FAILED after 5 attempts. attempt_error_array: " + str(attempt_error_array))
+            return False
+        else:
+            function_logger.debug("update_influx - " + "string for influx is " + str(string_to_upload))
+            function_logger.debug("update_influx - " + "influx status code is  " + str(upload_to_influx_sessions_response.status_code))
+            function_logger.debug("update_influx - " + "influx response is code is " + str(upload_to_influx_sessions_response.text[0:1000]))
+            return True
+    except Exception as e:
+        function_logger.error("update_influx - something went bad sending to InfluxDB")
+        function_logger.error("update_influx - Unexpected error:" + str(sys.exc_info()[0]))
+        function_logger.error("update_influx - Unexpected error:" + str(e))
+        function_logger.error("update_influx - TRACEBACK=" + str(traceback.format_exc()))
+    return False
+
+
+
 
 
 def graceful_killer(signal_number, frame):
