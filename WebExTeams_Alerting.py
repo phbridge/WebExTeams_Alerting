@@ -51,7 +51,7 @@ from flask import Flask         # Flask website
 from flask import Response      # Used to respond to stats request
 import signal                   # catches SIGTERM and SIGINT
 from flask import request       # Flask website requester details
-# from webexteamssdk import WebexTeamsAPI  # gets and posts messages
+from webexteamssdk import WebexTeamsAPI  # gets and posts messages
 import requests
 import time
 
@@ -68,7 +68,7 @@ LOGFILE = credentials.LOGFILE
 
 WXT_BOT_ACCESS_TOKEN = credentials.WXT_BOT_ACCESS_TOKEN
 WXT_BOT_ROOM_ID = credentials.WXT_BOT_ROOM_ID
-# api = WebexTeamsAPI(access_token=WXT_BOT_ACCESS_TOKEN)
+api = WebexTeamsAPI(access_token=WXT_BOT_ACCESS_TOKEN)
 WXT_BOT_NAME = credentials.WXT_BOT_NAME
 
 flask_app = Flask(__name__)
@@ -137,7 +137,7 @@ def message_create(roomId, text="", markdown=""):
         "Content-Type": "application/json",
         "Authorization": "Bearer %s" % WXT_BOT_ACCESS_TOKEN
     }
-    body_data = {
+    json_data = {
         "roomId": roomId,
         "text": text,
         "markdown": markdown
@@ -149,7 +149,7 @@ def message_create(roomId, text="", markdown=""):
     attempts = 0
     while attempts < 5 and not success:
         try:
-            response = requests.post(url=webex_message_url, headers=webex_headers, data=body_data)
+            response = requests.post(url=webex_message_url, headers=webex_headers, json=json_data)
             if response.status_code == 200:
                 success = True
             else:
