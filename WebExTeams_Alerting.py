@@ -77,16 +77,16 @@ flask_app = Flask(__name__)
 @flask_app.route('/wxt_bot_message', methods=['GET', 'POST'])
 def wxt_bot_message():
     function_logger = logger.getChild("%s.%s.%s" % (inspect.stack()[2][3], inspect.stack()[1][3], inspect.stack()[0][3]))
-    function_logger.info("wxt_bot_message")
-    function_logger.setLevel(logging.DEBUG)
+    # function_logger.info("wxt_bot_message")
+    # function_logger.setLevel(logging.DEBUG)
     message_response = ""
     try:
         if request.method == 'GET':
-            function_logger.info("GOT GET MESSAGE")
+            function_logger.debug("GOT GET MESSAGE")
             function_logger.debug(request.json)
             return Response("WORKING", mimetype='text/plain')
         elif request.method == 'POST':
-            function_logger.info("GOT POST MESSAGE")
+            function_logger.debug("GOT POST MESSAGE")
             function_logger.debug(request.json)
             for each in request.json['alerts']:
                 if each["status"] == "resolved":
