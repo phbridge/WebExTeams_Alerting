@@ -130,7 +130,7 @@ def wxt_bot_message():
     return Response("ERROR", mimetype='text/plain', status=500)
 
 
-def message_create(roomId, text, markdown=None):
+def message_create(roomId, text="", markdown=""):
     function_logger = logger.getChild("%s.%s.%s" % (inspect.stack()[2][3], inspect.stack()[1][3], inspect.stack()[0][3]))
     webex_message_url = "https://webexapis.com/v1/messages"
     webex_headers = {
@@ -142,6 +142,9 @@ def message_create(roomId, text, markdown=None):
         "text": text,
         "markdown": markdown
     }
+    function_logger.critical(webex_message_url)
+    function_logger.critical(webex_headers)
+    function_logger.critical(body_data)
     success = False
     attempts = 0
     while attempts < 5 and not success:
@@ -150,6 +153,7 @@ def message_create(roomId, text, markdown=None):
             if response.status_code == 200:
                 success = True
             else:
+                attempts += 1
                 function_logger.critical("got %s code from post" % response.status_code)
                 function_logger.critical("got text as %s" % response.text)
                 function_logger.critical("got headers as %s" % response.headers)
@@ -169,6 +173,7 @@ def message_create(roomId, text, markdown=None):
             function_logger.warning("TRACEBACK=" + str(traceback.format_exc()))
             time.sleep(1)
         except Exception as e:
+            attempts += 1
             function_logger.error("attempted " + str(attempts) + " Failed")
             function_logger.error("Unexpected error:" + str(sys.exc_info()[0]))
             function_logger.error("Unexpected error:" + str(e))
