@@ -146,7 +146,7 @@ def message_create(roomId, text, markdown=None):
     attempts = 0
     while attempts < 5 and not success:
         try:
-            response = requests.post(url=webex_message_url, header=webex_headers, data=body_data)
+            response = requests.post(url=webex_message_url, headers=webex_headers, data=body_data)
             if response.status_code == 200:
                 success = True
             else:
