@@ -142,9 +142,9 @@ def message_create(roomId, text="", markdown=""):
         "text": text,
         "markdown": markdown
     }
-    function_logger.critical(webex_message_url)
-    function_logger.critical(webex_headers)
-    function_logger.critical(json_data)
+    function_logger.debug(webex_message_url)
+    function_logger.debug(webex_headers)
+    function_logger.debug(json_data)
     success = False
     attempts = 0
     while attempts < 5 and not success:
